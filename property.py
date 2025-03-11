@@ -16,6 +16,18 @@ class PropertyColor(Enum):
     BLUE = auto()
 
 
+PROPERTY_COLOR_COUNTS = {
+    PropertyColor.BROWN: 2,
+    PropertyColor.SKYBLUE: 3,
+    PropertyColor.PURPLE: 3,
+    PropertyColor.ORANGE: 3,
+    PropertyColor.RED: 3,
+    PropertyColor.YELLOW: 3,
+    PropertyColor.GREEN: 3,
+    PropertyColor.BLUE: 2
+}
+
+
 class PropertyType(Enum):
     LAND = auto()
     RAILROAD = auto()
