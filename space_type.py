@@ -2,9 +2,6 @@ from enum import Enum, auto
 
 
 class SpaceType(Enum):
-    def _generate_next_value_(name, start, count, last_values):
-        return name
-
     FREE_SPACE = auto()
     PROPERTY = auto()
     CHANCE = auto()

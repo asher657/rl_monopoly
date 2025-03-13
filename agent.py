@@ -2,7 +2,8 @@ from board_space import BoardSpace
 from space_type import SpaceType
 
 
-class Player:
+
+class Agent:
     def __init__(self,
                  curr_space: BoardSpace = BoardSpace('go', 0, SpaceType.GO),
                  money: int = 1500):
