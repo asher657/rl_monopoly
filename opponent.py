@@ -2,7 +2,8 @@ import numpy as np
 
 
 class Opponent:
-    def __init__(self, money: int = 1500, debug=False):
+    def __init__(self, curr_position: int = 0, money: int = 1500, debug=False):
+        self.curr_position = curr_position
         self.money = money
         self.debug = debug
 
