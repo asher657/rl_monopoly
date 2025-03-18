@@ -64,19 +64,8 @@ class BoardSpace:
         self.num_houses = num_houses
         self.num_hotels = num_hotels
 
-    def get_rent(self, dice_roll: int = 1):
-        if self.property_type == PropertyType.LAND:
-            if self.is_mortgaged or not self.is_owned:
-                return 0
-            if self.num_hotels > 0:
-                return self.rent_hotel
-            else:
-                return self.rent[self.num_houses]
-        elif self.property_type == PropertyType.RAILROAD:
-            # TODO: get number of railroads owned and return value
-            num_railroads = None
-            return self.rent[num_railroads - 1]
+    def get_rent(self):
+        if self.property_type == PropertyType.LAND and self.num_houses == 1:
+            return self.rent[self.num_houses]
         else:
-            # TODO: get number of utilities owned and return value
-            num_utilities = None
-            return dice_roll * self.rent[num_utilities]
+            return 0
