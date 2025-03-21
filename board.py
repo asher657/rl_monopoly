@@ -28,14 +28,24 @@ class Board:
         position_data = self.board_positions[position]
         return position_data.get_rent()
 
-    def update_affordability_states(self, agent: Agent, opponent: Opponent):
-        # determine which houses the agent can afford and which rents the opponent can afford after each action
-        pass
+    def update_affordability_states(self) -> None:
+        for idx, space in self.board_positions.items():
+            if self.agent.money > space.rent[1]:
+                self.state[-2,idx] = 1
+            else:
+                self.state[-2,idx] = 0
+            if self.opponent.money > space.rent[1]:
+                self.state[-1,idx] = 1
+            else:
+                self.state[-1,idx] = 0
+        return None
 
-    def update_state_space(self, agent: Agent, opponent: Opponent, next_opponent_position: int, ):
+    def update_state_space(self, agent: Agent, opponent: Opponent,opp_previous_pos, next_opponent_position: int, house_location: int) -> None:
         self.update_affordability_states(agent, opponent)
-        pass
-
+        self.state[1,opp_previous_pos] = 0
+        self.state[1,next_opponent_position] = 1
+        self.state[0,house_location] = 1
+        return None
     def execute_action(self, house_location: int):
         game_end = False
 
@@ -55,6 +65,7 @@ class Board:
 
         rent = 0
         opponent_roll = self.opponent.get_action()
+        opp_previous_pos = self.opponent.curr_position
         self.opponent.curr_position += opponent_roll
         if self.opponent.curr_position >= 40:
             # pass go
@@ -70,5 +81,5 @@ class Board:
                     game_end = True
 
         # update state space here
-
+        self.update_state_space(self.agent, self.opponent,opp_previous_pos, self.opponent.curr_position, house_location)
         return rent - house_cost, self.opponent.curr_position, game_end
