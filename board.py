@@ -30,14 +30,15 @@ class Board:
 
     def update_affordability_states(self) -> None:
         for idx, space in self.board_positions.items():
-            if self.agent.money > space.rent[1]:
-                self.state[-2,idx] = 1
-            else:
-                self.state[-2,idx] = 0
-            if self.opponent.money > space.rent[1]:
-                self.state[-1,idx] = 1
-            else:
-                self.state[-1,idx] = 0
+            if space.space_type == SpaceType.PROPERTY:
+                if self.agent.money > space.rent[1]:
+                    self.state[-2,idx] = 1
+                else:
+                    self.state[-2,idx] = 0
+                if self.opponent.money > space.rent[1]:
+                    self.state[-1,idx] = 1
+                else:
+                    self.state[-1,idx] = 0
         return None
 
     def update_state_space(self, agent: Agent, opponent: Opponent,opp_previous_pos, next_opponent_position: int, house_location: int) -> None:
