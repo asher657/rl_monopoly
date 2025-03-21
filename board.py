@@ -7,6 +7,11 @@ from board_space import BoardSpace
 from opponent import Opponent
 from space_type import SpaceType
 
+OPPONENT_MONEY_INDEX = 4
+PLAYER_MONEY_INDEX = 3
+RENT_INDEX = 2
+OPPONENT_SPACE_INDEX = 1
+HOUSES_INDEX = 0
 
 class Board:
     def __init__(self, agent: Agent, default_cost: int = -10, debug: bool = False):
@@ -15,8 +20,12 @@ class Board:
         self.opponent = Opponent(debug)
         self.board_positions = self._load_positions()
         self.bought_houses = {i: 0 for i in range(len(self.board_positions))}
-        self.property_rents = [] # static of the rents
         self.state = np.zeros(shape=(5, 40))
+        for idx, space in self.board_positions.items():
+            if space.space_type == SpaceType.PROPERTY:
+                self.state[RENT_INDEX, idx] = space.rent[1]
+        self.state[OPPONENT_SPACE_INDEX, self.opponent.curr_position] = 1
+        self.update_affordability_states()
 
     def _load_positions(self) -> Dict[int, BoardSpace]:
         with open('positions.json', 'r', encoding='utf-8') as f:
@@ -32,20 +41,20 @@ class Board:
         for idx, space in self.board_positions.items():
             if space.space_type == SpaceType.PROPERTY:
                 if self.agent.money > space.rent[1]:
-                    self.state[-2,idx] = 1
+                    self.state[PLAYER_MONEY_INDEX,idx] = 1
                 else:
-                    self.state[-2,idx] = 0
+                    self.state[PLAYER_MONEY_INDEX,idx] = 0
                 if self.opponent.money > space.rent[1]:
-                    self.state[-1,idx] = 1
+                    self.state[OPPONENT_MONEY_INDEX,idx] = 1
                 else:
-                    self.state[-1,idx] = 0
+                    self.state[OPPONENT_MONEY_INDEX,idx] = 0
         return None
 
     def update_state_space(self, agent: Agent, opponent: Opponent,opp_previous_pos, next_opponent_position: int, house_location: int) -> None:
         self.update_affordability_states(agent, opponent)
-        self.state[1,opp_previous_pos] = 0
-        self.state[1,next_opponent_position] = 1
-        self.state[0,house_location] = 1
+        self.state[OPPONENT_SPACE_INDEX,opp_previous_pos] = 0
+        self.state[OPPONENT_SPACE_INDEX,next_opponent_position] = 1
+        self.state[HOUSES_INDEX, house_location] = 1
         return None
     def execute_action(self, house_location: int):
         game_end = False
