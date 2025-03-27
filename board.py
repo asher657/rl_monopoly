@@ -41,7 +41,7 @@ class Board:
         self.state[OPPONENT_SPACE_INDEX, self.opponent.curr_position] = 1
         self.update_affordability_states()
 
-    def update_affordability_states(self) -> None:
+    def update_affordability_states(self):
         for idx, space in self.board_positions.items():
             if space.space_type == SpaceType.PROPERTY:
                 if self.agent.money > space.rent[INITIAL_NUM_HOUSES]:
@@ -52,14 +52,13 @@ class Board:
                     self.state[OPPONENT_MONEY_INDEX, idx] = 1
                 else:
                     self.state[OPPONENT_MONEY_INDEX, idx] = 0
-        return None
 
-    def update_state_space(self, agent: Agent, opponent: Opponent, opp_previous_pos, next_opponent_position: int, house_location: int) -> None:
-        self.update_affordability_states(agent, opponent)
+    def update_state_space(self, opp_previous_pos, next_opponent_position: int, house_location: int):
+        self.update_affordability_states()
         self.state[OPPONENT_SPACE_INDEX, opp_previous_pos] = 0
         self.state[OPPONENT_SPACE_INDEX, next_opponent_position] = 1
-        self.state[HOUSES_INDEX, house_location] = 1
-        return None
+        if self.board_positions[house_location].space_type == SpaceType.PROPERTY:
+            self.state[HOUSES_INDEX, house_location] = 1
 
     def execute_action(self, house_location: int):
         game_end = False
@@ -96,5 +95,5 @@ class Board:
                     game_end = True
 
         # update state space here
-        self.update_state_space(self.agent, self.opponent, opp_previous_pos, self.opponent.curr_position, house_location)
+        self.update_state_space(opp_previous_pos, self.opponent.curr_position, house_location)
         return rent - house_cost, self.opponent.curr_position, game_end
