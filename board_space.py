@@ -5,6 +5,7 @@ from space_type import SpaceType
 
 
 class PropertyColor(Enum):
+    """Enumeration for different property colors in Monopoly."""
     BROWN = auto()
     SKYBLUE = auto()
     PURPLE = auto()
@@ -28,12 +29,33 @@ PROPERTY_COLOR_COUNTS = {
 
 
 class PropertyType(Enum):
+    """Enumeration for different types of properties in Monopoly."""
     LAND = auto()
     RAILROAD = auto()
     UTILITY = auto()
 
 
 class BoardSpace:
+    """
+    Represents a space on the Monopoly board.
+
+    Attributes:
+        name (str): The name of the board space.
+        position (int): The index position of the space on the board.
+        space_type (SpaceType): The type of space (e.g., PROPERTY, CHANCE, GO, etc.).
+        purchase_cost (int): The cost to purchase the property, if applicable.
+        color (PropertyColor or None): The color group of the property, if applicable.
+        property_type (PropertyType or None): The type of property (LAND, RAILROAD, UTILITY).
+        rent (List[int]): The rent values based on the number of houses built.
+        rent_hotel (int): The rent when a hotel is placed.
+        mortgage_value (int): The amount received when mortgaging the property.
+        mortgage_cost (float or None): The cost to unmortgage the property (110% of mortgage_value).
+        house_cost (int): The cost to build a house on the property.
+        is_owned (bool): Whether the property is currently owned.
+        is_mortgaged (bool): Whether the property is mortgaged.
+        num_houses (int): The number of houses built on the property.
+        num_hotels (int): The number of hotels built on the property.
+    """
     def __init__(self, name: str,
                  position: int,
                  space_type: str,
@@ -64,8 +86,24 @@ class BoardSpace:
         self.num_houses = num_houses
         self.num_hotels = num_hotels
 
-    def get_rent(self):
+    def get_rent(self) -> int:
+        """
+        Determines the rent amount based on the number of houses built.
+
+        Returns:
+            int: The rent amount. Returns 0 if the property is not a LAND property.
+        """
         if self.property_type == PropertyType.LAND and self.num_houses == 1:
             return self.rent[self.num_houses]
         else:
             return 0
+
+    def can_build_house(self) -> bool:
+        """
+        Checks if a house can be built on this property.
+
+        Returns:
+            bool: True if the property is a buildable LAND property, False otherwise.
+        """
+        return self.space_type == SpaceType.PROPERTY and self.property_type == PropertyType.LAND
+
