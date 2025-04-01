@@ -3,7 +3,6 @@ from agent import Agent
 
 def main():
     LOGGING_LEVEL = 'debug'
-
     agent = Agent(logging_level=LOGGING_LEVEL)
     board = Board(logging_level=LOGGING_LEVEL)
     # next_move = agent.get_action(board.state)
