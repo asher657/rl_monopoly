@@ -20,18 +20,22 @@ class Board:
         logger (logging.Logger): Logger instance for logging board actions.
         opponent (Opponent): The opponent in the game.
         board_positions (Dict[int, BoardSpace]): A dictionary mapping board positions to BoardSpace objects.
-        bought_houses (Dict[int, int]): A dictionary mapping board positions to the number of houses bought.
         state (np.ndarray): A 2D numpy array representing the game state, with various indices for player state, houses, etc.
     """
-    def __init__(self, default_cost: int = -10, logging_level: str = 'info'):
+    def __init__(self, default_cost: int = -10, logging_level: str = 'info', max_steps: int = 5000):
         self.logging_level = logging_level
         self.default_cost = default_cost
+        self.max_steps = max_steps
         self.logger = get_monopoly_logger(__name__, logging_level)
 
         self.opponent = Opponent(logging_level=self.logging_level)
         self.board_positions = self._load_positions()
-        self.bought_houses = {i: 0 for i in range(len(self.board_positions))}
         self.state = np.zeros(shape=(5, 40))
+
+        self.successes = []
+        self.rewards = []
+        self.agent_monies = []
+        self.opponent_monies = []
 
         self.reset()
 
@@ -75,16 +79,16 @@ class Board:
         for idx, space in self.board_positions.items():
             if space.can_build_house():
                 if agent_money > space.rent[INITIAL_NUM_HOUSES]:
-                    self.logger.debug(f'Agent money greater than space {idx} rent')
+                    # self.logger.debug(f'Agent money greater than space {idx} rent')
                     self.state[PLAYER_MONEY_INDEX, idx] = 1
                 else:
-                    self.logger.debug(f'Agent money less than space {idx} rent')
+                    # self.logger.debug(f'Agent money less than space {idx} rent')
                     self.state[PLAYER_MONEY_INDEX, idx] = 0
                 if self.opponent.money > space.rent[INITIAL_NUM_HOUSES]:
-                    self.logger.debug(f'Opponent money greater than space {idx} rent')
+                    # self.logger.debug(f'Opponent money greater than space {idx} rent')
                     self.state[OPPONENT_MONEY_INDEX, idx] = 1
                 else:
-                    self.logger.debug(f'Opponent money less than space {idx} rent')
+                    # self.logger.debug(f'Opponent money less than space {idx} rent')
                     self.state[OPPONENT_MONEY_INDEX, idx] = 0
 
     def update_state_space(self, opp_previous_pos, next_opponent_position: int, house_location: int, agent_money: int):
@@ -106,7 +110,7 @@ class Board:
         if self.board_positions[house_location].space_type == SpaceType.PROPERTY:
             self.state[HOUSES_INDEX, house_location] = 1
 
-    def execute_action(self, house_location: int, agent_money: int):
+    def execute_action(self, house_location: int, agent_money: int, step: int):
         """
         Executes the action for a given house location, adjusting the agent's money and updating the game state.
 
@@ -120,8 +124,15 @@ class Board:
                 - The updated game state (np.ndarray).
                 - A boolean indicating whether the game has ended (bool).
         """
+        if step >= self.max_steps:
+            self.logger.info(f'Max steps achieved! Ending game')
+            return 0, self.state, True
+
+        self.logger.debug(f'Step {step}')
         self.logger.info(f'Executing action with house location: {house_location}')
         game_end = False
+        passed_go = False
+        self.successes.append(0)
 
         position_data = self.board_positions[house_location]
         if not position_data.can_build_house():
@@ -147,9 +158,9 @@ class Board:
         opponent_roll = self.opponent.get_action()
         opp_previous_pos = self.opponent.curr_position
         self.opponent.curr_position += opponent_roll
-        self.logger.debug(f'Opponent rolled: {opponent_roll}')
         if self.opponent.curr_position >= 40:
             # pass go
+            passed_go = True
             self.opponent.curr_position = self.opponent.curr_position % 40
             self.opponent.money += 200
             self.logger.debug('Opponent passed GO, received 200 dollars')
@@ -162,11 +173,21 @@ class Board:
                 rent = opponent_position_data.get_rent()
                 self.logger.debug(f'Opponent landed on a property with a house, charging: {rent}')
                 self.opponent.money -= rent
+                self.successes[-1] = 1
                 if self.opponent.money <= 0:
                     self.logger.info(f'Opponent is now bankrupt, ending game')
                     game_end = True
 
         # update state space here
         agent_money += rent - house_cost
+        self.logger.debug(f'Agent payed ${house_cost} for house, and received ${rent} rent for a final total of ${agent_money}')
         self.update_state_space(opp_previous_pos, self.opponent.curr_position, house_location, agent_money)
+        self.rewards.append(rent - house_cost)
+        self.agent_monies.append(agent_money)
+        self.opponent_monies.append(self.opponent.money)
+
+        if passed_go:
+            self.logger.debug('Passed go so resetting bought houses')
+            self.state[HOUSES_INDEX] = np.zeros(40)
+
         return rent - house_cost, self.state, game_end
