@@ -20,7 +20,7 @@ class BaselineAgent(Agent):
         money (int): The starting money for the agent. Defaults to 1500.
         logging_level (str): The logging level for the agent. Defaults to 'info'.
     """
-    def __init__(self, money: int = 1500, logging_level: str = 'info'):
+    def __init__(self, money: int = AGENT_STARTING_MONEY, logging_level: str = 'info'):
         super().__init__(money, logging_level)
         self.logger = get_monopoly_logger(__name__, self.logging_level)
 
