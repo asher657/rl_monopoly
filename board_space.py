@@ -93,8 +93,6 @@ class BoardSpace:
         Returns:
             int: The rent amount. Returns 0 if the property is not a LAND property.
         """
-        if num_houses >= 4:
-            print('ERRORORORORO')
         if self.property_type == PropertyType.LAND:
             return self.rent[num_houses]
         else:

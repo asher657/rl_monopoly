@@ -76,21 +76,16 @@ class Board:
         Args:
             agent_money (int): The amount of money the agent currently has.
         """
-        self.logger.info('Updating affordability states')
-        self.logger.debug(f'Agent money: {agent_money} and opponent money: {self.opponent.money}')
+        self.logger.debug('Updating affordability states')
         for idx, space in self.board_positions.items():
             if space.can_build_house():
                 if agent_money > space.rent[INITIAL_NUM_HOUSES]:
-                    # self.logger.debug(f'Agent money greater than space {idx} rent')
                     self.state[PLAYER_MONEY_INDEX, idx] = 1
                 else:
-                    # self.logger.debug(f'Agent money less than space {idx} rent')
                     self.state[PLAYER_MONEY_INDEX, idx] = 0
                 if self.opponent.money > space.rent[INITIAL_NUM_HOUSES]:
-                    # self.logger.debug(f'Opponent money greater than space {idx} rent')
                     self.state[OPPONENT_MONEY_INDEX, idx] = 1
                 else:
-                    # self.logger.debug(f'Opponent money less than space {idx} rent')
                     self.state[OPPONENT_MONEY_INDEX, idx] = 0
 
     def update_state_space(self, opp_previous_pos, next_opponent_position: int, house_location: int, agent_money: int):
@@ -103,14 +98,10 @@ class Board:
             house_location (int): The location of the house being considered.
             agent_money (int): The amount of money the agent currently has.
         """
-        self.logger.info('Updating state space')
-        self.logger.debug(
-            f'Opponent previous pos: {opp_previous_pos}, opponent next pos: {next_opponent_position}, house loc: {house_location}, agent money: {agent_money}')
+        self.logger.debug('Updating state space')
         self.update_affordability_states(agent_money)
         self.state[OPPONENT_SPACE_INDEX, opp_previous_pos] = 0
         self.state[OPPONENT_SPACE_INDEX, next_opponent_position] = 1
-        # if self.board_positions[house_location].can_build_house():
-        #     self.state[HOUSES_INDEX, house_location] += 1
 
     def execute_action(self, house_location: int, agent: Agent, step: int):
         """
@@ -118,7 +109,7 @@ class Board:
 
         Args:
             house_location (int): The location of the house being bought.
-            agent_money (int): The amount of money the agent has before the action. TODO FIX THIS
+            agent (Agent): The agent used in this run.
 
         Returns:
             tuple: A tuple containing:
@@ -133,28 +124,21 @@ class Board:
         self.logger.debug(f'Step {step}')
         self.logger.info(f'Executing action with house location: {house_location}')
         game_end = False
-        passed_go = False
         self.successes.append(0)
         self.bought_positions.append(house_location)
 
         position_data = self.board_positions[house_location]
         if not position_data.can_build_house():
-            self.logger.debug(f'House cannot be bought at location: {house_location}. Cost is {self.default_cost}')
+            self.logger.debug(f'House cannot be bought at location: {house_location}. Default cost is ${-self.default_cost}')
             house_cost = self.default_cost
         else:
             house_cost = position_data.house_cost
             if self.state[HOUSES_INDEX, house_location] < 4:
-                self.logger.debug(f'House can be bought at location: {house_location}. Cost is {house_cost}')
-                # self.logger.debug('House not originally at location, adding house')
                 self.state[HOUSES_INDEX, house_location] += 1
+                self.logger.debug(f'Buying house at location: {house_location}. Cost is ${house_cost}. {self.state[HOUSES_INDEX, house_location]} houses at this location')
             else:
-                self.logger.debug('Max houses reached at location, not adding house')
-
-        if agent.money - house_cost <= 0:
-            # agent bankrupt
-            self.logger.info('Agent is now bankrupt, ending game')
-            game_end = True
-            return -house_cost, self.state, game_end
+                self.logger.debug(f'Max houses reached at location, not adding house. Default cost is {self.default_cost}')
+                house_cost = self.default_cost
 
         rent = 0
         opponent_roll = self.opponent.get_action()
@@ -162,7 +146,6 @@ class Board:
         self.opponent.curr_position += opponent_roll
         if self.opponent.curr_position >= 40:
             # pass go
-            passed_go = True
             self.opponent.curr_position = self.opponent.curr_position % 40
             self.opponent.money += 200
             self.logger.debug('Opponent passed GO, received 200 dollars')
@@ -170,30 +153,45 @@ class Board:
         self.logger.debug(f'Opponent moving from {opp_previous_pos} to {self.opponent.curr_position}')
 
         opponent_position_data = self.board_positions[self.opponent.curr_position]
-        if opponent_position_data.can_build_house():
-            if self.state[HOUSES_INDEX, self.opponent.curr_position] > 0:
-                rent = opponent_position_data.get_rent(self.state[HOUSES_INDEX, self.opponent.curr_position])
-                self.logger.debug(f'Opponent landed on a property with a house, charging: {rent}')
-                self.opponent.money -= rent
-                self.successes[-1] = 1
-                if self.opponent.money <= 0:
-                    self.logger.info(f'Opponent is now bankrupt, ending game')
-                    game_end = True
+        if opponent_position_data.space_type == SpaceType.LUXURY_TAX:
+            self.opponent.money -= LUXURY_TAX_COST
+            self.logger.info(
+                f'Opponent must pay luxury tax of {LUXURY_TAX_COST}. Opponent money is now: ${self.opponent.money}')
+        elif opponent_position_data.space_type == SpaceType.INCOME_TAX:
+            self.opponent.money -= INCOME_TAX_COST
+            self.logger.info(
+                f'Opponent must pay income tax of {INCOME_TAX_COST}. Opponent money is now: ${self.opponent.money}')
+        elif opponent_position_data.space_type == SpaceType.GO_TO_JAIL:
+            self.opponent.money -= GO_TO_JAIL_COST
+            self.opponent.curr_position = JAIL_POSITION
+            self.logger.info(
+                f'Opponent went to jail and must pay {GO_TO_JAIL_COST} to get out. Opponent money is now: ${self.opponent.money}')
+        else:
+            if self.state[HOUSES_INDEX, self.opponent.curr_position] == 0 or not opponent_position_data.can_build_house():
+                self.logger.debug('Opponent did not land on a position with a house. No rent is paid')
+            elif opponent_position_data.can_build_house():
+                if self.state[HOUSES_INDEX, self.opponent.curr_position] > 0:
+                    rent = opponent_position_data.get_rent(self.state[HOUSES_INDEX, self.opponent.curr_position])
+                    self.logger.debug(f'Opponent landed on a property with a house, charging: ${rent}')
+                    self.opponent.money -= rent
+                    self.successes[-1] = 1
+                    if self.opponent.money <= 0:
+                        self.logger.info(f'Opponent is now bankrupt, ending game')
+                        game_end = True
 
         # update state space here
         agent.money += rent - house_cost
-        self.logger.debug(f'Agent payed ${house_cost} for house, and received ${rent} rent for a final total of ${agent.money}')
+        self.logger.debug(f'Agent paid ${house_cost} for house, and received ${rent} rent. Agent money is now: ${agent.money}')
         self.update_state_space(opp_previous_pos, self.opponent.curr_position, house_location, agent.money)
         self.rewards.append(rent - house_cost)
         self.agent_monies.append(agent.money)
         self.opponent_monies.append(self.opponent.money)
 
         if np.all(self.state[PLAYER_MONEY_INDEX] == 0):
-            self.logger.info('Agent can no longer afford any houses, ending game')
+            self.logger.info('Agent is now bankrupt or can no longer afford any houses, ending game')
             game_end = True
 
-        if passed_go:
-            self.logger.debug('Passed go so resetting bought houses')
-            # self.state[HOUSES_INDEX] = np.zeros(40)
+        self.logger.info(
+            f'Opponent previous pos: {opp_previous_pos}, opponent next pos: {self.opponent.curr_position}, house loc: {house_location}, agent money: ${agent.money}, opponent money: ${self.opponent.money}')
 
         return rent - house_cost, self.state, game_end
