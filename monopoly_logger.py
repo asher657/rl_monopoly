@@ -1,7 +1,12 @@
 import logging
 from datetime import datetime
+import os
 
-LOG_FILE = f'monopoly_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+
+if not os.path.exists('log'):
+    os.makedirs('log')
+
+LOG_FILE = f'log/monopoly_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
 
 file_handler = logging.FileHandler(LOG_FILE)
 file_handler.setLevel(logging.DEBUG)

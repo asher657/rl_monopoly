@@ -5,32 +5,45 @@ from baseline_agent import BaselineAgent
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+from dqnagent import DqnAgent
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
-def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: str = 'info'):
+def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: str = 'info', optimize_param: int = 5):
     assert agent_type in ['random', 'baseline', 'dqn']
     logger = monopoly_logger.get_monopoly_logger(__name__, logging_level)
 
     logger.info(f'Starting Monopoly Game with {agent_type} agent!')
 
+    if agent_type == 'random':
+        agent = Agent(logging_level=logging_level)
+    elif agent_type == 'baseline':
+        agent = BaselineAgent(logging_level=logging_level)
+    else:
+        agent = DqnAgent(logging_level=logging_level, batch_size=10)
+
     agent_wins = []
     for episode in range(num_episodes):
         logger.info(f'===== Starting Episode {episode} =====')
+        agent.reset()
         game_end = False
-
-        if agent_type == 'random':
-            agent = Agent(logging_level=logging_level)
-        elif agent_type == 'baseline':
-            agent = BaselineAgent(logging_level=logging_level)
-        else:
-            agent = Agent(logging_level=logging_level)  # TODO replace with dqn agent
 
         board = Board(default_cost=0, logging_level=logging_level)
         step = 0
         while not game_end:
-            next_move = agent.get_action(board.state)
+            curr_state = board.state
+            next_move = agent.get_action(curr_state)
             reward, next_state, game_end = board.execute_action(next_move, agent, step)
+            agent.update_epsilon(episode)
+            if agent.experience:
+                agent.experience.push((curr_state, next_move, reward, next_state, game_end))
+            agent.optimize()
             step += 1
+        if episode % optimize_param == 0:
+            agent.update_target_network()
 
         agent_won = board.opponent_monies[-1] <= 0
         agent_wins.append(agent_won)
@@ -49,4 +62,4 @@ def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: s
 
 
 if __name__ == '__main__':
-    main('baseline', 200, 'info')
+    main('dqn', 500, 'info')
