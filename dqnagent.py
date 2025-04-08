@@ -1,4 +1,6 @@
 import torch.optim.optimizer
+
+from agent import Agent
 from monopoly_logger import get_monopoly_logger
 from dqn import DQN, ReplayBuffer
 import torch
@@ -7,7 +9,7 @@ from constants import *
 from typing import Union, List
 
 
-class DqnAgent:
+class DqnAgent(Agent):
     def __init__(self,
                  money: int = AGENT_STARTING_MONEY,
                  logging_level: str = 'info',
@@ -21,8 +23,7 @@ class DqnAgent:
                  hidden_layers: int = 3,
                  lr: float = 0.001,
                  hidden_layer_sizes: Union[List[int], int] = [200, 200, 200]):
-        self.money = money
-        self.logging_level = logging_level
+        super().__init__(money, logging_level)
         self.eps_start = eps_start
         self.eps_end = eps_end
         self.eps_decay = eps_decay
@@ -34,6 +35,7 @@ class DqnAgent:
             hidden_layer_sizes), "Please enter list of hidden layer sizes that equal amount of hidden layers."
         self.lr = lr
 
+        self.eps = eps_start
         self.experience = ReplayBuffer(self.max_experience_len)
         self.logger = get_monopoly_logger(__name__, self.logging_level)
 
@@ -43,14 +45,16 @@ class DqnAgent:
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), self.lr)
         self.target_net.eval()
 
-    def get_action(self, state: np.ndarray, episode_num: int):
+    def get_action(self, state: np.ndarray):
         self.logger.info('Getting next agent action')
-        r = np.max([(self.eps_decay - episode_num) / self.eps_decay, 0])
-        eps = (self.eps_start - self.eps_end) * r + self.eps_end
-        if np.random.uniform() < eps:
+        if np.random.uniform() < self.eps:
             return np.random.randint(0, 40)
         else:
             return self.policy_net(torch.tensor(state, dtype=torch.int64).to(device=self.device)).argmax(dim=1).item()
+
+    def update_epsilon(self, episode_num: int):
+        r = np.max([(self.eps_decay - episode_num) / self.eps_decay, 0])
+        self.eps = (self.eps_start - self.eps_end) * r + self.eps_end
 
     def optimize(self):
         if len(self.experience) < 4 * self.batch_size:
