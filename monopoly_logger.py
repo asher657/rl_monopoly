@@ -1,4 +1,10 @@
 import logging
+from datetime import datetime
+
+LOG_FILE = f'monopoly_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setLevel(logging.DEBUG)
 
 
 def get_monopoly_logger(class_name, logging_level: str = 'info'):
@@ -14,17 +20,18 @@ def get_monopoly_logger(class_name, logging_level: str = 'info'):
 
     if not logger.hasHandlers():  # Prevent adding multiple handlers
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(name)s.%(funcName)s - %(message)s"))
         logger.addHandler(handler)
 
+    if not any(isinstance(h, logging.FileHandler) and h.baseFilename == file_handler.baseFilename
+               for h in logger.handlers):
+        logger.addHandler(file_handler)
+
     if logging_level == 'info':
-        print(f'Setting logging level to: {logging_level}')
         logger.setLevel(logging.INFO)
     elif logging_level == 'debug':
-        print(f'Setting logging level to: {logging_level}')
         logger.setLevel(logging.DEBUG)
     else:
-        print(f'Logging level set to none. Not logging anything')
         logger.setLevel(logging.CRITICAL + 1)
 
     return logger

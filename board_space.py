@@ -86,15 +86,15 @@ class BoardSpace:
         self.num_houses = num_houses
         self.num_hotels = num_hotels
 
-    def get_rent(self) -> int:
+    def get_rent(self, num_houses) -> int:
         """
         Determines the rent amount based on the number of houses built.
 
         Returns:
             int: The rent amount. Returns 0 if the property is not a LAND property.
         """
-        if self.property_type == PropertyType.LAND and self.num_houses == 1:
-            return self.rent[self.num_houses]
+        if self.property_type == PropertyType.LAND:
+            return self.rent[num_houses]
         else:
             return 0
 
