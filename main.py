@@ -40,10 +40,10 @@ def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: s
             agent.update_epsilon(episode)
             if agent.experience:
                 agent.experience.push((curr_state, next_move, reward, next_state, game_end))
-            step += 1
-
-        if episode % optimize_param == 0:
             agent.optimize()
+            step += 1
+        if episode % optimize_param == 0:
+            agent.update_target_network()
 
         agent_won = board.opponent_monies[-1] <= 0
         agent_wins.append(agent_won)
@@ -52,11 +52,11 @@ def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: s
         else:
             logger.info('===== Opponent won! =====')
 
-        # if episode % 10 == 0:
-        #     plt.plot(board.agent_monies, label='Agent Money')
-        #     plt.plot(board.opponent_monies, label='Opponent Money')
-        #     plt.legend()
-        #     plt.show()
+        if episode % 10 == 0:
+            plt.plot(board.agent_monies, label='Agent Money')
+            plt.plot(board.opponent_monies, label='Opponent Money')
+            plt.legend()
+            plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
 
