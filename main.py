@@ -12,7 +12,7 @@ from dqnagent import DqnAgent
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
-def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: str = 'info'):
+def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: str = 'info', optimize_param: int = 5):
     assert agent_type in ['random', 'baseline', 'dqn']
     logger = monopoly_logger.get_monopoly_logger(__name__, logging_level)
 
@@ -42,7 +42,7 @@ def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: s
                 agent.experience.push((curr_state, next_move, reward, next_state, game_end))
             step += 1
 
-        if episode % 5 == 0:
+        if episode % optimize_param == 0:
             agent.optimize()
 
         agent_won = board.opponent_monies[-1] <= 0
@@ -52,11 +52,11 @@ def main(agent_type: str = 'baseline', num_episodes: int = 100, logging_level: s
         else:
             logger.info('===== Opponent won! =====')
 
-        if episode % 10 == 0:
-            plt.plot(board.agent_monies, label='Agent Money')
-            plt.plot(board.opponent_monies, label='Opponent Money')
-            plt.legend()
-            plt.show()
+        # if episode % 10 == 0:
+        #     plt.plot(board.agent_monies, label='Agent Money')
+        #     plt.plot(board.opponent_monies, label='Opponent Money')
+        #     plt.legend()
+        #     plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
 

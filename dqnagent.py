@@ -40,36 +40,41 @@ class DqnAgent(Agent):
         self.logger = get_monopoly_logger(__name__, self.logging_level)
 
         self.loss = torch.nn.MSELoss()
-        self.policy_net = DQN((self.batch_size, 4, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
-        self.target_net = DQN((self.batch_size, 4, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
+        self.policy_net = DQN((self.batch_size, 5, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
+        self.target_net = DQN((self.batch_size, 5, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), self.lr)
         self.target_net.eval()
 
     def get_action(self, state: np.ndarray):
         self.logger.info('Getting next agent action')
         if np.random.uniform() < self.eps:
+            self.logger.debug("Chose random action")
             return np.random.randint(0, 40)
         else:
-            return self.policy_net(torch.tensor(state, dtype=torch.int64).to(device=self.device)).argmax(dim=1).item()
+            self.logger.debug("Chose calculated action")
+            output = self.policy_net(torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(device=self.device))
+            action = torch.argmax(output).item()
+            return action
 
     def update_epsilon(self, episode_num: int):
         r = np.max([(self.eps_decay - episode_num) / self.eps_decay, 0])
         self.eps = (self.eps_start - self.eps_end) * r + self.eps_end
 
     def optimize(self):
-        if len(self.experience) < 4 * self.batch_size:
+        if len(self.experience) < BATCH_MULTIPLIER * self.batch_size:
             return
 
-        states, actions, rewards, next_states, dones = self.experience.sample(self.batch_size)
+        states, actions, rewards, next_states, _ = self.experience.sample(self.batch_size)
         states = states.to(device=self.device)
         actions = actions.to(device=self.device)
         rewards = rewards.to(device=self.device)
         next_states = next_states.to(device=self.device)
-        dones = dones.to(device=self.device)
+
         self.optimizer.zero_grad()
         q_values = self.policy_net(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
         next_q_vals = torch.max(self.target_net(next_states), 1)[0]
         target_q_values = rewards + self.gamma * next_q_vals
+
         loss = self.loss(q_values, target_q_values)
         loss.backward()
         self.optimizer.step()
