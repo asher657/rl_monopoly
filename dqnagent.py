@@ -15,7 +15,7 @@ class DqnAgent(Agent):
                  logging_level: str = 'info',
                  eps_start=1,
                  eps_end=.001,
-                 eps_decay=50000,
+                 eps_decay=100,
                  device="cuda" if torch.cuda.is_available() else "cpu",
                  batch_size: int = 256,
                  gamma: float = 0.9,
@@ -59,6 +59,8 @@ class DqnAgent(Agent):
     def update_epsilon(self, episode_num: int):
         r = np.max([(self.eps_decay - episode_num) / self.eps_decay, 0])
         self.eps = (self.eps_start - self.eps_end) * r + self.eps_end
+        if self.eps == self.eps_end:
+            self.logger.info('=== Epsilon reached the minimum ===')
 
     def optimize(self):
         if len(self.experience) < BATCH_MULTIPLIER * self.batch_size:
