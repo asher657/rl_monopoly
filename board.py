@@ -181,7 +181,7 @@ class Board:
 
         # update state space here
         agent.money += rent - house_cost
-        self.logger.debug(f'Agent paid ${house_cost} for house, and received ${rent} rent. Agent money is now: ${agent.money}')
+        self.logger.info(f'Agent paid ${house_cost} for house, and received ${rent} rent. Agent money is now: ${agent.money}')
         self.update_state_space(opp_previous_pos, self.opponent.curr_position, house_location, agent.money)
         self.rewards.append(rent - house_cost)
         self.agent_monies.append(agent.money)
@@ -191,7 +191,14 @@ class Board:
             self.logger.info('Agent is now bankrupt or can no longer afford any houses, ending game')
             game_end = True
 
+        if np.all(self.state[HOUSES_INDEX][self.state[RENT_INDEX] > 0] == 4):
+            self.logger.info('==== All houses bought! ====')
+
         self.logger.info(
             f'Opponent previous pos: {opp_previous_pos}, opponent next pos: {self.opponent.curr_position}, house loc: {house_location}, agent money: ${agent.money}, opponent money: ${self.opponent.money}')
 
-        return rent - house_cost, self.state, game_end
+        if house_location == self.opponent.curr_position:
+            reward = rent - house_cost
+        else:
+            reward = -house_cost
+        return reward, self.state, game_end
