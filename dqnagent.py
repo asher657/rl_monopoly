@@ -19,9 +19,10 @@ class DqnAgent(Agent):
                  device="cuda" if torch.cuda.is_available() else "cpu",
                  batch_size: int = 256,
                  gamma: float = 0.9,
-                 max_experience_len: int = 5120,
+                 max_experience_len: int = 16384,
                  hidden_layers: int = 3,
                  lr: float = 0.001,
+                 update_target_net_freq: int = 50,
                  hidden_layer_sizes: Union[List[int], int] = [200, 200, 200]):
         super().__init__(money, logging_level)
         self.eps_start = eps_start
@@ -34,6 +35,7 @@ class DqnAgent(Agent):
         assert hidden_layers == len(
             hidden_layer_sizes), "Please enter list of hidden layer sizes that equal amount of hidden layers."
         self.lr = lr
+        self.update_target_net_freq = update_target_net_freq
 
         self.eps = eps_start
         self.experience = ReplayBuffer(self.max_experience_len)
@@ -62,24 +64,29 @@ class DqnAgent(Agent):
         if self.eps == self.eps_end:
             self.logger.info('=== Epsilon reached the minimum ===')
 
-    def optimize(self):
+    def save_model(self, path):
+        torch.save(self.policy_net.state_dict(), path)
+
+    def optimize(self, episode):
         if len(self.experience) < BATCH_MULTIPLIER * self.batch_size:
             return
 
-        states, actions, rewards, next_states, _ = self.experience.sample(self.batch_size)
+        states, actions, rewards, next_states, dones = self.experience.sample(self.batch_size)
         states = states.to(device=self.device)
         actions = actions.to(device=self.device)
         rewards = rewards.to(device=self.device)
         next_states = next_states.to(device=self.device)
+        dones = dones.to(device=self.device)
 
         self.optimizer.zero_grad()
         q_values = self.policy_net(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
         next_q_vals = torch.max(self.target_net(next_states), 1)[0]
-        target_q_values = rewards + self.gamma * next_q_vals
+        target_q_values = rewards + ~dones * self.gamma * next_q_vals
 
         loss = self.loss(q_values, target_q_values)
         loss.backward()
         self.optimizer.step()
 
-    def update_target_network(self):
-        self.target_net.load_state_dict(self.policy_net.state_dict())
+        if episode % self.update_target_net_freq == 0:
+            self.target_net.load_state_dict(self.policy_net.state_dict())
+
