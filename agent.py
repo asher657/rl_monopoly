@@ -21,8 +21,11 @@ class Agent:
         return np.random.randint(0, 40)
         # or continue trying until space is property type
 
-    def optimize(self):
+    def optimize(self, episode):
         pass
 
     def update_epsilon(self, episode_num: int):
+        pass
+
+    def save_model(self, path):
         pass

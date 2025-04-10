@@ -110,6 +110,7 @@ class Board:
         Args:
             house_location (int): The location of the house being bought.
             agent (Agent): The agent used in this run.
+            step (int): The current step of the action
 
         Returns:
             tuple: A tuple containing:
@@ -198,7 +199,10 @@ class Board:
             f'Opponent previous pos: {opp_previous_pos}, opponent next pos: {self.opponent.curr_position}, house loc: {house_location}, agent money: ${agent.money}, opponent money: ${self.opponent.money}')
 
         if house_location == self.opponent.curr_position:
+            reward = 2 * rent - house_cost
+        elif rent > 0:
             reward = rent - house_cost
         else:
             reward = -house_cost
+        self.logger.info(f'Reward: {reward}')
         return reward, self.state, game_end
