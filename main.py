@@ -1,3 +1,5 @@
+from typing import List
+
 import monopoly_logger
 from agent import Agent
 from board import Board
@@ -21,7 +23,8 @@ def main(agent_type: str = 'baseline',
          batch_size: int = 512,
          default_cost: int = 500,
          max_experience_len: int = 16384,
-         lr: float = 0.001):
+         lr: float = 0.001,
+         hidden_layer_sizes: List[int] = [256, 256, 256]):
     assert agent_type in ['random', 'baseline', 'dqn']
     logger = monopoly_logger.get_monopoly_logger(__name__, logging_level)
 
@@ -38,7 +41,8 @@ def main(agent_type: str = 'baseline',
                          eps_decay=eps_decay,
                          max_experience_len=max_experience_len,
                          lr=lr,
-                         update_target_net_freq=update_target_net_freq)
+                         update_target_net_freq=update_target_net_freq,
+                         hidden_layer_sizes=hidden_layer_sizes)
 
     agent_wins = []
     episode_rewards = []
@@ -84,6 +88,9 @@ def main(agent_type: str = 'baseline',
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
     logger.info(f'Agent average reward: {np.mean(average_episode_rewards)}')
+
+    logger.info(f'Agent last 50 average win rate: {np.mean(agent_wins[-50:])}')
+    logger.info(f'Agent last 50 average reward: {np.mean(average_episode_rewards[-50:])}')
 
     current_datetime = datetime.now().strftime('%Y_%m_%d_%H_%M')
     model_name = f'dqn_agent_{current_datetime}'
@@ -149,13 +156,14 @@ def evaluate(agent_type='dqn',
 
 if __name__ == '__main__':
     main(agent_type='dqn',
-         num_episodes=10000,
+         num_episodes=1000,
          logging_level='info',
          update_target_net_freq=50,
          batch_size=512,
          default_cost=500,
          max_experience_len=16384,
-         lr=0.001)
+         lr=0.001,
+         hidden_layer_sizes=[512, 512, 512])
     # trained_policy_net = 'trained_agents/dqn_agent_2025_04_09_18_43'
     # evaluate(agent_type='dqn',
     #          num_episodes=1000,
