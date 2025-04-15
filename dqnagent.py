@@ -20,7 +20,6 @@ class DqnAgent(Agent):
                  batch_size: int = 256,
                  gamma: float = 0.9,
                  max_experience_len: int = 16384,
-                 hidden_layers: int = 3,
                  lr: float = 0.001,
                  update_target_net_freq: int = 50,
                  hidden_layer_sizes: Union[List[int], int] = [200, 200, 200]):
@@ -32,8 +31,6 @@ class DqnAgent(Agent):
         self.batch_size = batch_size
         self.gamma = gamma
         self.max_experience_len = max_experience_len
-        assert hidden_layers == len(
-            hidden_layer_sizes), "Please enter list of hidden layer sizes that equal amount of hidden layers."
         self.lr = lr
         self.update_target_net_freq = update_target_net_freq
 
@@ -42,8 +39,8 @@ class DqnAgent(Agent):
         self.logger = get_monopoly_logger(__name__, self.logging_level)
 
         self.loss = torch.nn.MSELoss()
-        self.policy_net = DQN((self.batch_size, 5, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
-        self.target_net = DQN((self.batch_size, 5, 40), hidden_layers, hidden_layer_sizes, 40).to(device=self.device)
+        self.policy_net = DQN((self.batch_size, 5, 40), hidden_layer_sizes, 40).to(device=self.device)
+        self.target_net = DQN((self.batch_size, 5, 40), hidden_layer_sizes, 40).to(device=self.device)
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), self.lr)
         self.target_net.eval()
 
@@ -54,7 +51,7 @@ class DqnAgent(Agent):
             return np.random.randint(0, 40)
         else:
             self.logger.debug("Chose calculated action")
-            output = self.policy_net(torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(device=self.device))
+            output = self.policy_net(torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device=self.device))
             action = torch.argmax(output).item()
             return action
 
@@ -89,4 +86,3 @@ class DqnAgent(Agent):
 
         if episode % self.update_target_net_freq == 0:
             self.target_net.load_state_dict(self.policy_net.state_dict())
-
