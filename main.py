@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from datetime import datetime
+import torch.multiprocessing as mp
 import torch
 
 from dqnagent import DqnAgent
@@ -99,7 +100,10 @@ def train(agent_type='baseline',
           default_cost=500,
           max_experience_len=16384,
           lr=0.001,
-          hidden_layer_sizes=[256, 256, 256]):
+          hidden_layer_sizes=[256, 256, 256],
+          show_plots=True,
+          save_model=True,
+          run_date_time=None):
     logger = monopoly_logger.get_monopoly_logger(__name__, logging_level)
     logger.info(f'Starting Monopoly Game with {agent_type} agent!')
 
@@ -115,23 +119,32 @@ def train(agent_type='baseline',
     episode_rewards, agent_wins = run_episodes(agent, num_episodes, logger, logging_level, default_cost)
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
-    plt.scatter(range(len(avg_rewards)), avg_rewards)
-    plt.show()
+    if show_plots:
+        plt.scatter(range(len(avg_rewards)), avg_rewards)
+        plt.title(f'{agent_type} Average Episode Rewards')
+        plt.xlabel('Episodes')
+        plt.ylabel('Rewards')
+        plt.savefig(f'plots/{agent_type}_training_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
+        plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
     logger.info(f'Agent average reward: {np.mean(avg_rewards)}')
     logger.info(f'Agent last 50 average win rate: {np.mean(agent_wins[-50:])}')
     logger.info(f'Agent last 50 average reward: {np.mean(avg_rewards[-50:])}')
 
-    model_name = f'dqn_agent_{datetime.now().strftime("%Y_%m_%d_%H_%M")}'
-    agent.save_model(f'trained_agents/{model_name}')
+    if save_model:
+        model_name = f'dqn_agent_{run_date_time}'
+        agent.save_model(f'trained_agents/{model_name}')
+
+    return episode_rewards
 
 
 def evaluate(agent_type='dqn',
              num_episodes=100,
              logging_level='info',
              default_cost=500,
-             trained_policy_net=None):
+             trained_policy_net=None,
+             run_date_time=None):
     logger = monopoly_logger.get_monopoly_logger(__name__, logging_level)
     logger.info(f'Starting Monopoly Game with {agent_type} agent!')
 
@@ -143,25 +156,92 @@ def evaluate(agent_type='dqn',
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
     plt.scatter(range(len(avg_rewards)), avg_rewards)
+    plt.title(f'{agent_type} Average Episode Rewards')
+    plt.xlabel('Episodes')
+    plt.ylabel('Rewards')
+    plt.savefig(f'plots/{agent_type}_evaluation_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
     logger.info(f'Agent average reward: {np.mean(avg_rewards)}')
 
+    return avg_rewards
+
+
+def parallel_agent_training(args):
+    (agent_type, num_episodes, logging_level, update_target_net_freq, batch_size,
+     default_cost, max_experience_len, lr, hidden_layer_sizes, show_plots, save_model) = args
+    agent_rewards = train(agent_type,
+                          num_episodes,
+                          logging_level,
+                          update_target_net_freq,
+                          batch_size,
+                          default_cost,
+                          max_experience_len,
+                          lr,
+                          hidden_layer_sizes,
+                          show_plots,
+                          save_model)
+
+    return [np.mean(x) for x in agent_rewards]
+
+
+def get_learning_curves(num_agents: int = 50,
+                        num_episodes: int = 30000,
+                        logging_level='info',
+                        update_target_net_freq=50,
+                        batch_size=512,
+                        default_cost=500,
+                        max_experience_len=16384,
+                        lr=0.001,
+                        hidden_layer_sizes=[256],
+                        run_date_time=None):
+    mp.set_start_method('spawn', force=True)
+
+    with mp.Pool(processes=min(num_agents, mp.cpu_count())) as pool:
+        args_list = [('dqn',
+                      num_episodes,
+                      logging_level,
+                      update_target_net_freq,
+                      batch_size,
+                      default_cost,
+                      max_experience_len,
+                      lr,
+                      hidden_layer_sizes,
+                      False,
+                      False) for _ in range(num_agents)]
+
+        agent_episode_rewards = pool.map(parallel_agent_training, args_list)
+
+    agent_episode_rewards = np.array(agent_episode_rewards)
+    avg_agent_episode_rewards = np.mean(agent_episode_rewards, axis=0)
+
+    halfway_index = num_episodes // 2
+    plt.scatter(range(halfway_index, num_episodes), avg_agent_episode_rewards[halfway_index:])
+    plt.title('DQN Learning Curve')
+    plt.xlabel('Episodes')
+    plt.ylabel('Rewards')
+    plt.savefig(f'plots/dqn_learning_curve_{run_date_time}.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
 
 if __name__ == '__main__':
+    run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
     # train(agent_type='dqn',
-    #       num_episodes=10000,
+    #       num_episodes=20000,
     #       logging_level='info',
     #       update_target_net_freq=50,
     #       batch_size=512,
     #       default_cost=500,
     #       max_experience_len=16384,
     #       lr=0.001,
-    #       hidden_layer_sizes=[64, 64])
-    trained_policy_net = 'trained_agents/dqn_agent_2025_04_09_18_43'
-    evaluate(agent_type='dqn',
-             num_episodes=1000,
-             logging_level='info',
-             default_cost=500,
-             trained_policy_net=trained_policy_net)
+    #       hidden_layer_sizes=[256],
+    #       run_date_time)
+    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_16_18_20'
+    # evaluate(agent_type='baseline',
+    #          num_episodes=1000,
+    #          logging_level='info',
+    #          default_cost=200,
+    #          trained_policy_net=trained_policy_net,
+    #          run_date_time)
+    get_learning_curves(5, num_episodes=50, run_date_time=run_date_time)
