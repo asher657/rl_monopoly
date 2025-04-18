@@ -127,11 +127,13 @@ class Board:
         game_end = False
         self.successes.append(0)
         self.bought_positions.append(house_location)
+        not_house_eligible = False
 
         position_data = self.board_positions[house_location]
         if not position_data.can_build_house():
             self.logger.debug(f'House cannot be bought at location: {house_location}. Default cost is ${-self.default_cost}')
             house_cost = self.default_cost
+            not_house_eligible = True
         else:
             house_cost = position_data.house_cost
             if self.state[HOUSES_INDEX, house_location] < 4:
@@ -140,6 +142,7 @@ class Board:
             else:
                 self.logger.debug(f'Max houses reached at location, not adding house. Default cost is {self.default_cost}')
                 house_cost = self.default_cost
+                not_house_eligible = True
 
         rent = 0
         opponent_roll = self.opponent.get_action()
@@ -181,7 +184,10 @@ class Board:
                         game_end = True
 
         # update state space here
-        agent.money += rent - house_cost
+        if not_house_eligible:
+            agent.money += rent
+        else:
+            agent.money += rent - house_cost
         self.logger.info(f'Agent paid ${house_cost} for house, and received ${rent} rent. Agent money is now: ${agent.money}')
         self.update_state_space(opp_previous_pos, self.opponent.curr_position, house_location, agent.money)
         self.rewards.append(rent - house_cost)
