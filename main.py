@@ -6,6 +6,7 @@ from baseline_agent import BaselineAgent
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from collections import Counter
 from datetime import datetime
 import torch.multiprocessing as mp
 import torch
@@ -73,23 +74,28 @@ def run_episode(agent, episode, logging_level, default_cost, is_train=True):
         step += 1
 
     agent_won = board.opponent_monies[-1] <= 0
-    return game_rewards, agent_won
+    bought_positions = dict(Counter(board.bought_positions))
+    bought_positions = {i: bought_positions.get(i, 0) for i in range(40)}
+
+    return game_rewards, agent_won, bought_positions
 
 
 def run_episodes(agent, num_episodes, logger, logging_level, default_cost, is_train=True):
     episode_rewards = []
     agent_wins = []
+    bought_positions = {}
 
     for episode in range(num_episodes):
         logger.info(f'===== Starting Episode {episode} =====')
-        rewards, won = run_episode(agent, episode, logging_level, default_cost, is_train)
+        rewards, won, episode_bought_positions = run_episode(agent, episode, logging_level, default_cost, is_train)
         episode_rewards.append(rewards)
         agent_wins.append(won)
+        bought_positions[episode] = episode_bought_positions
 
         logger.info('===== Agent won! =====' if won else '===== Opponent won! =====')
         logger.info(f'===== Game ended in {len(rewards)} steps =====')
 
-    return episode_rewards, agent_wins
+    return episode_rewards, agent_wins, bought_positions
 
 
 def train(agent_type='baseline',
@@ -116,7 +122,7 @@ def train(agent_type='baseline',
                       lr=lr,
                       hidden_layer_sizes=hidden_layer_sizes)
 
-    episode_rewards, agent_wins = run_episodes(agent, num_episodes, logger, logging_level, default_cost)
+    episode_rewards, agent_wins, bought_positions = run_episodes(agent, num_episodes, logger, logging_level, default_cost)
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
     if show_plots:
@@ -152,7 +158,7 @@ def evaluate(agent_type='dqn',
                       trained_policy_net=trained_policy_net,
                       num_episodes=num_episodes)
 
-    episode_rewards, agent_wins = run_episodes(agent, num_episodes, logger, logging_level, default_cost, is_train=False)
+    episode_rewards, agent_wins, bought_positions = run_episodes(agent, num_episodes, logger, logging_level, default_cost, is_train=False)
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
     plt.scatter(range(len(avg_rewards)), avg_rewards)
@@ -227,21 +233,22 @@ def get_learning_curves(num_agents: int = 50,
 
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
+    DEFAULT_COST = 1000
     # train(agent_type='dqn',
-    #       num_episodes=20000,
+    #       num_episodes=5000,
     #       logging_level='info',
     #       update_target_net_freq=50,
     #       batch_size=512,
-    #       default_cost=500,
+    #       default_cost=DEFAULT_COST,
     #       max_experience_len=16384,
     #       lr=0.001,
     #       hidden_layer_sizes=[256],
-    #       run_date_time)
-    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_16_18_20'
-    # evaluate(agent_type='baseline',
-    #          num_episodes=1000,
-    #          logging_level='info',
-    #          default_cost=200,
-    #          trained_policy_net=trained_policy_net,
-    #          run_date_time)
-    get_learning_curves(5, num_episodes=50, run_date_time=run_date_time)
+    #       run_date_time=run_date_time)
+    trained_policy_net = 'trained_agents/dqn_agent_2025_04_17_22_42'
+    evaluate(agent_type='baseline',
+             num_episodes=1000,
+             logging_level='info',
+             default_cost=DEFAULT_COST,
+             trained_policy_net=trained_policy_net,
+             run_date_time=run_date_time)
+    # get_learning_curves(5, num_episodes=1000, run_date_time=run_date_time)
