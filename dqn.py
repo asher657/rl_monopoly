@@ -20,7 +20,7 @@ class DQN(nn.Module):
 
         if self.multiple_layers:
             self.hidden_layers = nn.ModuleList(
-                [nn.Linear(hidden_layer_sizes[i], hidden_layer_sizes[i + 1]) for i in range(self.num_hidden_layers - 1)])
+                [nn.Sequential(nn.Linear(hidden_layer_sizes[i], hidden_layer_sizes[i + 1]), nn.Dropout1d(.5)) for i in range(self.num_hidden_layers - 1)])
 
         self.output_layer = nn.Linear(hidden_layer_sizes[-1], n_actions)
 
