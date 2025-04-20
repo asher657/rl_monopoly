@@ -282,7 +282,7 @@ def test_models(num_episodes: int = 30000,
                 lrs=[.001, .001, .001, .001, .0001, .0001, .0001, .0001],
                 hidden_layer_sizes=[[256], [256, 256, 256], [256, 512, 256], [256, 512, 512, 256], [256],
                                     [256, 256, 256], [256, 512, 256], [256, 512, 512, 256]],
-                run_date_time=None):
+                run_date_time=datetime.now().strftime("%Y_%m_%d_%H_%M")):
     mp.set_start_method('spawn', force=True)
     with mp.Pool(processes=min(len(lrs) + len(hidden_layer_sizes), mp.cpu_count())) as pool:
         args_list = [('dqn',
