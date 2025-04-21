@@ -133,13 +133,16 @@ def train(agent_type='baseline',
         plt.ylabel('Rewards')
         plt.savefig(f'plots/{agent_type}_training_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
         # plt.show()
-        plot = agent_wins[-50:]
-        plot = [1 if i else 0 for i in plot]
-        plt.imshow(np.array(plot).reshape(1,-1), extent=[0, len(plot), 0, 1], cmap='Greys')
-        plt.xticks(np.arange(0, len(plot), 1), [])
-        plt.yticks([])
-        plt.grid(True, axis='x', lw=1, c='black')
-        plt.tick_params(axis='x', length=0)
+        wins = [1 if i else 0 for i in agent_wins]
+        win_rate = []
+        cumulative_wins = 0
+        for i in range(len(wins)):
+            cumulative_wins += wins[i]
+            win_rate.append(cumulative_wins / (i + 1))
+        plt.plot(list(range(wins)), win_rate, marker='o')
+        plt.xlabel("Games Played")
+        plt.ylabel("Win Rate")
+        plt.title("Win Rate Over Time")
         # plt.show()
         plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
         plt.scatter(range(len(episode_length)), episode_length)
@@ -185,13 +188,16 @@ def evaluate(agent_type='dqn',
     plt.ylabel('Rewards')
     plt.savefig(f'plots/{agent_type}_evaluation_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
-    plot = agent_wins[-50:]
-    plot = [1 if i else 0 for i in plot]
-    plt.imshow(np.array(plot).reshape(1,-1), extent=[0, len(plot), 0, 1], cmap='Greys')
-    plt.xticks(np.arange(0, len(plot), 1), [])
-    plt.yticks([])
-    plt.grid(True, axis='x', lw=1, c='black')
-    plt.tick_params(axis='x', length=0)
+    wins = [1 if i else 0 for i in agent_wins]
+    win_rate = []
+    cumulative_wins = 0
+    for i in range(len(wins)):
+        cumulative_wins += wins[i]
+        win_rate.append(cumulative_wins / (i + 1))
+    plt.plot(list(range(wins)), win_rate, marker='o')
+    plt.xlabel("Games Played")
+    plt.ylabel("Win Rate")
+    plt.title("Win Rate Over Time")
     plt.show()
     plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
     plt.scatter(range(len(episode_length)), episode_length)
@@ -247,9 +253,8 @@ def get_learning_curves(num_agents: int = 50,
                       max_experience_len,
                       lr,
                       hidden_layer_sizes,
-                      True,
-                      True,
-                      run_date_time) for _ in range(num_agents)]
+                      False,
+                      False) for _ in range(num_agents)]
 
         agent_episode_rewards = pool.map(parallel_agent_training, args_list)
 
@@ -279,10 +284,12 @@ def test_models(num_episodes: int = 30000,
                 lr,
                 hl,
                 True,
-                True) for lr, hl in zip(lrs, hidden_layer_sizes)]
+                True,
+                run_date_time) for lr, hl in zip(lrs, hidden_layer_sizes)]
         agent_episode_rewards = pool.map(parallel_agent_training, args_list)
     agent_episode_rewards = np.array(agent_episode_rewards)
     mean_rewards = agent_episode_rewards[:,-50:]
+    return np.argmax(mean_rewards)
 
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
