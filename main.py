@@ -133,25 +133,25 @@ def train(agent_type='baseline',
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
         plt.savefig(f'plots/{agent_type}_training_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
-        # plt.show()
+        plt.show()
         wins = [1 if i else 0 for i in agent_wins]
         win_rate = []
         cumulative_wins = 0
         for i in range(len(wins)):
             cumulative_wins += wins[i]
             win_rate.append(cumulative_wins / (i + 1))
-        plt.plot(list(range(wins)), win_rate, marker='o')
+        plt.plot(list(range(len(wins))), win_rate, marker='o')
         plt.xlabel("Games Played")
         plt.ylabel("Win Rate")
         plt.title("Win Rate Over Time")
-        # plt.show()
         plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
+        plt.show()
         plt.scatter(range(len(episode_length)), episode_length)
         plt.title(f'{agent_type} Episode Length')
         plt.xlabel('Episodes')
         plt.ylabel('Length')
         plt.savefig(f'plots/{agent_type}_episode_length_{run_date_time}.png', dpi=300, bbox_inches='tight')
-        # plt.show()
+        plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
     logger.info(f'Agent average reward: {np.mean(avg_rewards)}')
@@ -190,18 +190,17 @@ def evaluate(agent_type='dqn',
     plt.ylabel('Rewards')
     plt.savefig(f'plots/{agent_type}_evaluation_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
-    wins = [1 if i else 0 for i in agent_wins]
     win_rate = []
     cumulative_wins = 0
-    for i in range(len(wins)):
-        cumulative_wins += wins[i]
+    for i in range(len(agent_wins)):
+        cumulative_wins += agent_wins[i]
         win_rate.append(cumulative_wins / (i + 1))
-    plt.plot(list(range(wins)), win_rate, marker='o')
+    plt.plot(range(len(agent_wins)), win_rate, marker='o')
     plt.xlabel("Games Played")
     plt.ylabel("Win Rate")
     plt.title("Win Rate Over Time")
-    plt.show()
     plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
+    plt.show()
     plt.scatter(range(len(episode_length)), episode_length)
     plt.title(f'{agent_type} Episode Length')
     plt.xlabel('Episodes')
@@ -262,7 +261,6 @@ def get_learning_curves(num_agents: int = 50,
     agent_episode_rewards, agent_episode_wins = zip(*results)
 
     agent_episode_rewards = np.array(list(agent_episode_rewards))
-    avg_agent_episode_rewards = np.mean(agent_episode_rewards, axis=0)
     agent_episode_wins = np.array(list(agent_episode_wins))
     avg_agent_episode_wins = np.mean(agent_episode_wins, axis=0)
 
@@ -305,22 +303,19 @@ def test_models(num_episodes: int = 20,
         results = pool.map(parallel_agent_training, args_list)
 
     agent_episode_rewards, agent_episode_wins = zip(*results)
-    agent_episode_rewards = list(agent_episode_rewards)
-    # agent_episode_wins = list(agent_episode_wins)
-    for i in range(agent_episode_wins.shape[0]):
-        agent_wins = list(agent_episode_wins[i,:])
-        wins = [1 if i else 0 for i in agent_wins]
+    agent_episode_wins = np.array(list(agent_episode_wins))
+    for i in range(len(agent_episode_wins)):
+        agent_wins = list(agent_episode_wins[i, :])
         win_rate = []
         cumulative_wins = 0
-        for i in range(len(wins)):
-            cumulative_wins += wins[i]
-            win_rate.append(cumulative_wins / (i + 1))
-        plt.plot(list(range(wins)), win_rate, marker='o')
+        for j in range(len(agent_wins)):
+            cumulative_wins += agent_wins[j]
+            win_rate.append(cumulative_wins / (j + 1))
+        plt.plot(range(len(agent_wins)), win_rate, marker='o')
         plt.xlabel("Games Played")
         plt.ylabel("Win Rate")
         plt.title("Win Rate Over Time")
         plt.show()
-    return None
 
 
 if __name__ == '__main__':
