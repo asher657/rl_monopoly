@@ -134,7 +134,6 @@ def train(agent_type='baseline',
         plt.ylabel('Rewards')
         plt.savefig(f'plots/{agent_type}_training_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
         # plt.show()
-<<<<<<< HEAD
         wins = [1 if i else 0 for i in agent_wins]
         win_rate = []
         cumulative_wins = 0
@@ -145,15 +144,6 @@ def train(agent_type='baseline',
         plt.xlabel("Games Played")
         plt.ylabel("Win Rate")
         plt.title("Win Rate Over Time")
-=======
-        plot = agent_wins[-50:]
-        plot = [1 if i else 0 for i in plot]
-        plt.imshow(np.array(plot).reshape(1, -1), extent=[0, len(plot), 0, 1], cmap='Greys')
-        plt.xticks(np.arange(0, len(plot), 1), [])
-        plt.yticks([])
-        plt.grid(True, axis='x', lw=1, c='black')
-        plt.tick_params(axis='x', length=0)
->>>>>>> 628deb7fc4ff107608cc7d325761317390319f89
         # plt.show()
         plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
         plt.scatter(range(len(episode_length)), episode_length)
@@ -200,7 +190,6 @@ def evaluate(agent_type='dqn',
     plt.ylabel('Rewards')
     plt.savefig(f'plots/{agent_type}_evaluation_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
-<<<<<<< HEAD
     wins = [1 if i else 0 for i in agent_wins]
     win_rate = []
     cumulative_wins = 0
@@ -211,15 +200,6 @@ def evaluate(agent_type='dqn',
     plt.xlabel("Games Played")
     plt.ylabel("Win Rate")
     plt.title("Win Rate Over Time")
-=======
-    plot = agent_wins[-50:]
-    plot = [1 if i else 0 for i in plot]
-    plt.imshow(np.array(plot).reshape(1, -1), extent=[0, len(plot), 0, 1], cmap='Greys')
-    plt.xticks(np.arange(0, len(plot), 1), [])
-    plt.yticks([])
-    plt.grid(True, axis='x', lw=1, c='black')
-    plt.tick_params(axis='x', length=0)
->>>>>>> 628deb7fc4ff107608cc7d325761317390319f89
     plt.show()
     plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
     plt.scatter(range(len(episode_length)), episode_length)
@@ -311,23 +291,6 @@ def test_models(num_episodes: int = 30000,
     mp.set_start_method('spawn', force=True)
     with mp.Pool(processes=min(len(lrs) + len(hidden_layer_sizes), mp.cpu_count())) as pool:
         args_list = [('dqn',
-<<<<<<< HEAD
-                num_episodes,
-                logging_level,
-                update_target_net_freq,
-                batch_size,
-                default_cost,
-                max_experience_len,
-                lr,
-                hl,
-                True,
-                True,
-                run_date_time) for lr, hl in zip(lrs, hidden_layer_sizes)]
-        agent_episode_rewards = pool.map(parallel_agent_training, args_list)
-    agent_episode_rewards = np.array(agent_episode_rewards)
-    mean_rewards = agent_episode_rewards[:,-50:]
-    return np.argmax(mean_rewards)
-=======
                       num_episodes,
                       logging_level,
                       update_target_net_freq,
@@ -347,8 +310,8 @@ def test_models(num_episodes: int = 30000,
 
     agent_episode_rewards = np.array(agent_episode_rewards)
     mean_rewards = agent_episode_rewards[:, -50:]
+    return np.argmax(mean_rewards)
 
->>>>>>> 628deb7fc4ff107608cc7d325761317390319f89
 
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
