@@ -254,7 +254,8 @@ def get_learning_curves(num_agents: int = 50,
                       lr,
                       hidden_layer_sizes,
                       False,
-                      False) for _ in range(num_agents)]
+                      False,
+                      run_date_time) for _ in range(num_agents)]
 
         results = pool.map(parallel_agent_training, args_list)
 
@@ -322,9 +323,6 @@ def test_models(num_episodes: int = 10000,
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
     DEFAULT_COST = 2000
-    # lrs = [.001,.001,.001,.001,.0001,.0001,.0001,.0001]
-    # hidden_sizes = [[256],[256,256,256],[256,512,256],[256,512,512,256],[256],[256,256,256],[256,512,256],[256,512,512,256]]
-    # for lr, hs in zip(lrs, hidden_sizes):
     # train(agent_type='dqn',
     #     num_episodes=10000,
     #     logging_level='info',
@@ -333,15 +331,15 @@ if __name__ == '__main__':
     #     default_cost=DEFAULT_COST,
     #     max_experience_len=16384,
     #     lr=.001,
-    #     hidden_layer_sizes=[256],
+    #     hidden_layer_sizes=[256, 512, 512, 256],
     #     run_date_time=run_date_time)
-    wr = test_models()
-    print(wr)
-    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_17_22_42'
+    # wr = test_models()
+    # print(wr)
+    # trained_policy_net = 'trained_agents/dqn_agent_final'
     # evaluate(agent_type='baseline',
     #          num_episodes=1000,
     #          logging_level='info',
     #          default_cost=DEFAULT_COST,
     #          trained_policy_net=trained_policy_net,
     #          run_date_time=run_date_time)
-    # get_learning_curves(5, num_episodes=1000, run_date_time=run_date_time)
+    get_learning_curves(50, num_episodes=1000, hidden_layer_sizes=[256, 512, 512, 256], run_date_time=run_date_time)
