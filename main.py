@@ -276,7 +276,7 @@ def get_learning_curves(num_agents: int = 50,
     return np.argmax(avg_agent_episode_rewards)
 
 
-def test_models(num_episodes: int = 20,
+def test_models(num_episodes: int = 10000,
                 logging_level='info',
                 update_target_net_freq=50,
                 batch_size=512,
@@ -297,7 +297,7 @@ def test_models(num_episodes: int = 20,
                       max_experience_len,
                       lr,
                       hl,
-                      True,
+                      False,
                       True,
                       run_date_time) for lr, hl in zip(lrs, hidden_layer_sizes)]
         results = pool.map(parallel_agent_training, args_list)
@@ -316,6 +316,7 @@ def test_models(num_episodes: int = 20,
         plt.ylabel("Win Rate")
         plt.title("Win Rate Over Time")
         plt.show()
+    return np.mean(agent_episode_wins, axis = 1)
 
 
 if __name__ == '__main__':
@@ -334,7 +335,8 @@ if __name__ == '__main__':
     #     lr=.001,
     #     hidden_layer_sizes=[256],
     #     run_date_time=run_date_time)
-    test_models()
+    wr = test_models()
+    print(wr)
     # trained_policy_net = 'trained_agents/dqn_agent_2025_04_17_22_42'
     # evaluate(agent_type='baseline',
     #          num_episodes=1000,
