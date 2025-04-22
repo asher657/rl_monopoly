@@ -84,18 +84,18 @@ def run_episodes(agent, num_episodes, logger, logging_level, default_cost, is_tr
     episode_rewards = []
     agent_wins = []
     bought_positions = {}
-
+    episode_length = []
     for episode in range(num_episodes):
         logger.info(f'===== Starting Episode {episode} =====')
         rewards, won, episode_bought_positions = run_episode(agent, episode, logging_level, default_cost, is_train)
         episode_rewards.append(rewards)
         agent_wins.append(won)
         bought_positions[episode] = episode_bought_positions
-
+        episode_length.append(len(rewards))
         logger.info('===== Agent won! =====' if won else '===== Opponent won! =====')
         logger.info(f'===== Game ended in {len(rewards)} steps =====')
 
-    return episode_rewards, agent_wins, bought_positions
+    return episode_rewards, agent_wins, bought_positions, episode_length
 
 
 def train(agent_type='baseline',
@@ -121,8 +121,10 @@ def train(agent_type='baseline',
                       max_experience_len=max_experience_len,
                       lr=lr,
                       hidden_layer_sizes=hidden_layer_sizes)
-
-    episode_rewards, agent_wins, bought_positions = run_episodes(agent, num_episodes, logger, logging_level, default_cost)
+    if agent_type == "dqn":
+        agent.policy_net.train()
+    episode_rewards, agent_wins, bought_positions, episode_length = run_episodes(agent, num_episodes, logger,
+                                                                                 logging_level, default_cost)
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
     if show_plots:
@@ -131,6 +133,24 @@ def train(agent_type='baseline',
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
         plt.savefig(f'plots/{agent_type}_training_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
+        plt.show()
+        wins = [1 if i else 0 for i in agent_wins]
+        win_rate = []
+        cumulative_wins = 0
+        for i in range(len(wins)):
+            cumulative_wins += wins[i]
+            win_rate.append(cumulative_wins / (i + 1))
+        plt.plot(list(range(len(wins))), win_rate, marker='o')
+        plt.xlabel("Games Played")
+        plt.ylabel("Win Rate")
+        plt.title("Win Rate Over Time")
+        plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
+        plt.show()
+        plt.scatter(range(len(episode_length)), episode_length)
+        plt.title(f'{agent_type} Episode Length')
+        plt.xlabel('Episodes')
+        plt.ylabel('Length')
+        plt.savefig(f'plots/{agent_type}_episode_length_{run_date_time}.png', dpi=300, bbox_inches='tight')
         plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
@@ -142,7 +162,7 @@ def train(agent_type='baseline',
         model_name = f'dqn_agent_{run_date_time}'
         agent.save_model(f'trained_agents/{model_name}')
 
-    return episode_rewards
+    return avg_rewards, agent_wins
 
 
 def evaluate(agent_type='dqn',
@@ -157,8 +177,11 @@ def evaluate(agent_type='dqn',
     agent = get_agent(agent_type, logging_level,
                       trained_policy_net=trained_policy_net,
                       num_episodes=num_episodes)
-
-    episode_rewards, agent_wins, bought_positions = run_episodes(agent, num_episodes, logger, logging_level, default_cost, is_train=False)
+    if agent_type == "dqn":
+        agent.policy_net.eval()
+    episode_rewards, agent_wins, bought_positions, episode_length = run_episodes(agent, num_episodes, logger,
+                                                                                 logging_level, default_cost,
+                                                                                 is_train=False)
 
     avg_rewards = [np.mean(x) for x in episode_rewards]
     plt.scatter(range(len(avg_rewards)), avg_rewards)
@@ -166,6 +189,23 @@ def evaluate(agent_type='dqn',
     plt.xlabel('Episodes')
     plt.ylabel('Rewards')
     plt.savefig(f'plots/{agent_type}_evaluation_rewards_{run_date_time}.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    win_rate = []
+    cumulative_wins = 0
+    for i in range(len(agent_wins)):
+        cumulative_wins += agent_wins[i]
+        win_rate.append(cumulative_wins / (i + 1))
+    plt.plot(range(len(agent_wins)), win_rate, marker='o')
+    plt.xlabel("Games Played")
+    plt.ylabel("Win Rate")
+    plt.title("Win Rate Over Time")
+    plt.savefig(f'plots/{agent_type}_latest_wins_{run_date_time}')
+    plt.show()
+    plt.scatter(range(len(episode_length)), episode_length)
+    plt.title(f'{agent_type} Episode Length')
+    plt.xlabel('Episodes')
+    plt.ylabel('Length')
+    plt.savefig(f'plots/{agent_type}_episode_length_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
 
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
@@ -176,20 +216,19 @@ def evaluate(agent_type='dqn',
 
 def parallel_agent_training(args):
     (agent_type, num_episodes, logging_level, update_target_net_freq, batch_size,
-     default_cost, max_experience_len, lr, hidden_layer_sizes, show_plots, save_model) = args
-    agent_rewards = train(agent_type,
-                          num_episodes,
-                          logging_level,
-                          update_target_net_freq,
-                          batch_size,
-                          default_cost,
-                          max_experience_len,
-                          lr,
-                          hidden_layer_sizes,
-                          show_plots,
-                          save_model)
-
-    return [np.mean(x) for x in agent_rewards]
+     default_cost, max_experience_len, lr, hidden_layer_sizes, show_plots, save_model, run_date_time) = args
+    return train(agent_type,
+                 num_episodes,
+                 logging_level,
+                 update_target_net_freq,
+                 batch_size,
+                 default_cost,
+                 max_experience_len,
+                 lr,
+                 hidden_layer_sizes,
+                 show_plots,
+                 save_model,
+                 run_date_time)
 
 
 def get_learning_curves(num_agents: int = 50,
@@ -217,38 +256,92 @@ def get_learning_curves(num_agents: int = 50,
                       False,
                       False) for _ in range(num_agents)]
 
-        agent_episode_rewards = pool.map(parallel_agent_training, args_list)
+        results = pool.map(parallel_agent_training, args_list)
 
-    agent_episode_rewards = np.array(agent_episode_rewards)
-    avg_agent_episode_rewards = np.mean(agent_episode_rewards, axis=0)
+    agent_episode_rewards, agent_episode_wins = zip(*results)
+
+    agent_episode_rewards = np.array(list(agent_episode_rewards))
+    agent_episode_wins = np.array(list(agent_episode_wins))
+    avg_agent_episode_wins = np.mean(agent_episode_wins, axis=0)
 
     halfway_index = num_episodes // 2
-    plt.scatter(range(halfway_index, num_episodes), avg_agent_episode_rewards[halfway_index:])
+    plt.scatter(range(halfway_index, num_episodes), avg_agent_episode_wins[halfway_index:])
     plt.title('DQN Learning Curve')
     plt.xlabel('Episodes')
-    plt.ylabel('Rewards')
+    plt.ylabel('Win Rate')
     plt.savefig(f'plots/dqn_learning_curve_{run_date_time}.png', dpi=300, bbox_inches='tight')
     plt.show()
+
+    avg_agent_episode_rewards = np.mean(agent_episode_rewards, axis=1)
+    return np.argmax(avg_agent_episode_rewards)
+
+
+def test_models(num_episodes: int = 10000,
+                logging_level='info',
+                update_target_net_freq=50,
+                batch_size=512,
+                default_cost=2000,
+                max_experience_len=16384,
+                lrs=[.001, .001, .001, .001, .0001, .0001, .0001, .0001],
+                hidden_layer_sizes=[[256], [256, 256, 256], [256, 512, 256], [256, 512, 512, 256], [256],
+                                    [256, 256, 256], [256, 512, 256], [256, 512, 512, 256]],
+                run_date_time=datetime.now().strftime("%Y_%m_%d_%H_%M")):
+    mp.set_start_method('spawn', force=True)
+    with mp.Pool(processes=min(len(lrs) + len(hidden_layer_sizes), mp.cpu_count())) as pool:
+        args_list = [('dqn',
+                      num_episodes,
+                      logging_level,
+                      update_target_net_freq,
+                      batch_size,
+                      default_cost,
+                      max_experience_len,
+                      lr,
+                      hl,
+                      False,
+                      True,
+                      run_date_time) for lr, hl in zip(lrs, hidden_layer_sizes)]
+        results = pool.map(parallel_agent_training, args_list)
+
+    agent_episode_rewards, agent_episode_wins = zip(*results)
+    agent_episode_wins = np.array(list(agent_episode_wins))
+    for i in range(len(agent_episode_wins)):
+        agent_wins = list(agent_episode_wins[i, :])
+        win_rate = []
+        cumulative_wins = 0
+        for j in range(len(agent_wins)):
+            cumulative_wins += agent_wins[j]
+            win_rate.append(cumulative_wins / (j + 1))
+        plt.plot(range(len(agent_wins)), win_rate, marker='o')
+        plt.xlabel("Games Played")
+        plt.ylabel("Win Rate")
+        plt.title("Win Rate Over Time")
+        plt.show()
+    return np.mean(agent_episode_wins, axis = 1)
 
 
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
-    DEFAULT_COST = 1000
+    DEFAULT_COST = 2000
+    # lrs = [.001,.001,.001,.001,.0001,.0001,.0001,.0001]
+    # hidden_sizes = [[256],[256,256,256],[256,512,256],[256,512,512,256],[256],[256,256,256],[256,512,256],[256,512,512,256]]
+    # for lr, hs in zip(lrs, hidden_sizes):
     # train(agent_type='dqn',
-    #       num_episodes=5000,
-    #       logging_level='info',
-    #       update_target_net_freq=50,
-    #       batch_size=512,
-    #       default_cost=DEFAULT_COST,
-    #       max_experience_len=16384,
-    #       lr=0.001,
-    #       hidden_layer_sizes=[256],
-    #       run_date_time=run_date_time)
-    trained_policy_net = 'trained_agents/dqn_agent_2025_04_17_22_42'
-    evaluate(agent_type='baseline',
-             num_episodes=1000,
-             logging_level='info',
-             default_cost=DEFAULT_COST,
-             trained_policy_net=trained_policy_net,
-             run_date_time=run_date_time)
+    #     num_episodes=10000,
+    #     logging_level='info',
+    #     update_target_net_freq=50,
+    #     batch_size=512,
+    #     default_cost=DEFAULT_COST,
+    #     max_experience_len=16384,
+    #     lr=.001,
+    #     hidden_layer_sizes=[256],
+    #     run_date_time=run_date_time)
+    wr = test_models()
+    print(wr)
+    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_17_22_42'
+    # evaluate(agent_type='baseline',
+    #          num_episodes=1000,
+    #          logging_level='info',
+    #          default_cost=DEFAULT_COST,
+    #          trained_policy_net=trained_policy_net,
+    #          run_date_time=run_date_time)
     # get_learning_curves(5, num_episodes=1000, run_date_time=run_date_time)
