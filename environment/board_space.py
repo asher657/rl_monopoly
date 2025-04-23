@@ -1,7 +1,7 @@
 from typing import List
 from enum import Enum, auto
 
-from space_type import SpaceType
+from environment.space_type import SpaceType
 
 
 class PropertyColor(Enum):

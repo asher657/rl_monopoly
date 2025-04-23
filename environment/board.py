@@ -3,12 +3,12 @@ import os.path
 from typing import Dict
 import numpy as np
 
-from agent import Agent
-from board_space import BoardSpace
-from constants import *
-from opponent import Opponent
-from space_type import SpaceType
-from monopoly_logger import get_monopoly_logger
+from agents.agent import Agent
+from environment.board_space import BoardSpace
+from utils.constants import *
+from environment.opponent import Opponent
+from environment.space_type import SpaceType
+from utils.monopoly_logger import get_monopoly_logger
 
 
 class Board:
@@ -23,7 +23,7 @@ class Board:
         board_positions (Dict[int, BoardSpace]): A dictionary mapping board positions to BoardSpace objects.
         state (np.ndarray): A 2D numpy array representing the game state, with various indices for player state, houses, etc.
     """
-    def __init__(self, default_cost: int = -10, logging_level: str = 'info', max_steps: int = 5000):
+    def __init__(self, default_cost: int = -10, logging_level: str = 'info', max_steps: int = 500):
         self.logging_level = logging_level
         self.default_cost = default_cost
         self.max_steps = max_steps

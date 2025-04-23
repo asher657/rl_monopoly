@@ -1,6 +1,6 @@
-from constants import *
-from agent import Agent
-from monopoly_logger import get_monopoly_logger
+from utils.constants import *
+from agents.agent import Agent
+from utils.monopoly_logger import get_monopoly_logger
 
 import numpy as np
 

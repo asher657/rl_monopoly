@@ -1,5 +1,5 @@
-from constants import AGENT_STARTING_MONEY
-from monopoly_logger import get_monopoly_logger
+from utils.constants import AGENT_STARTING_MONEY
+from utils.monopoly_logger import get_monopoly_logger
 
 import numpy as np
 

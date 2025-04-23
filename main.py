@@ -1,7 +1,8 @@
-import monopoly_logger
-from agent import Agent
-from board import Board
-from baseline_agent import BaselineAgent
+from statistical_tests import *
+from utils import monopoly_logger
+from agents.agent import Agent
+from environment.board import Board
+from agents.baseline_agent import BaselineAgent
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +12,8 @@ from datetime import datetime
 import torch.multiprocessing as mp
 import torch
 
-from dqnagent import DqnAgent
+from agents.dqnagent import DqnAgent
+from utils.constants import DEFAULT_COST
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -211,7 +213,7 @@ def evaluate(agent_type='dqn',
     logger.info(f'Agent average win rate: {np.mean(agent_wins)}')
     logger.info(f'Agent average reward: {np.mean(avg_rewards)}')
 
-    return avg_rewards
+    return avg_rewards, agent_wins
 
 
 def parallel_agent_training(args):
@@ -317,29 +319,49 @@ def test_models(num_episodes: int = 10000,
         plt.ylabel("Win Rate")
         plt.title("Win Rate Over Time")
         plt.show()
-    return np.mean(agent_episode_wins, axis = 1)
+    return np.mean(agent_episode_wins, axis=1)
+
+
+def run_statistical_tests(run_date_time, trained_policy_net='trained_agents/dqn_agent_final'):
+    _, random_wins = evaluate(agent_type='random',
+                              num_episodes=1000,
+                              logging_level='info',
+                              default_cost=DEFAULT_COST,
+                              trained_policy_net=trained_policy_net,
+                              run_date_time=run_date_time)
+    _, baseline_wins = evaluate(agent_type='baseline',
+                                num_episodes=1000,
+                                logging_level='info',
+                                default_cost=DEFAULT_COST,
+                                trained_policy_net=trained_policy_net,
+                                run_date_time=run_date_time)
+    _, dqn_wins = evaluate(agent_type='dqn',
+                           num_episodes=1000,
+                           logging_level='info',
+                           default_cost=DEFAULT_COST,
+                           trained_policy_net=trained_policy_net,
+                           run_date_time=run_date_time)
+
+    run_analysis(random_wins, baseline_wins, dqn_wins, run_date_time)
 
 
 if __name__ == '__main__':
     run_date_time = datetime.now().strftime("%Y_%m_%d_%H_%M")
-    DEFAULT_COST = 2000
+
     # train(agent_type='dqn',
-    #     num_episodes=10000,
-    #     logging_level='info',
-    #     update_target_net_freq=50,
-    #     batch_size=512,
-    #     default_cost=DEFAULT_COST,
-    #     max_experience_len=16384,
-    #     lr=.001,
-    #     hidden_layer_sizes=[256, 512, 512, 256],
-    #     run_date_time=run_date_time)
+    #       num_episodes=10000,
+    #       logging_level='info',
+    #       update_target_net_freq=50,
+    #       batch_size=512,
+    #       default_cost=DEFAULT_COST,
+    #       max_experience_len=16384,
+    #       lr=.001,
+    #       hidden_layer_sizes=[256],
+    #       run_date_time=run_date_time)
     # wr = test_models()
     # print(wr)
-    # trained_policy_net = 'trained_agents/dqn_agent_final'
-    # evaluate(agent_type='baseline',
-    #          num_episodes=1000,
-    #          logging_level='info',
-    #          default_cost=DEFAULT_COST,
-    #          trained_policy_net=trained_policy_net,
-    #          run_date_time=run_date_time)
-    get_learning_curves(50, num_episodes=1000, hidden_layer_sizes=[256, 512, 512, 256], run_date_time=run_date_time)
+
+    get_learning_curves(50, num_episodes=10000, default_cost=DEFAULT_COST, hidden_layer_sizes=[256], run_date_time=run_date_time)
+
+    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_22_20_41'
+    # run_statistical_tests(run_date_time, trained_policy_net)

@@ -1,6 +1,6 @@
 import numpy as np
 
-from monopoly_logger import get_monopoly_logger
+from utils.monopoly_logger import get_monopoly_logger
 
 
 class Opponent:
