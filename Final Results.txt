@@ -1,0 +1,44 @@
+#### AGENT WIN RATE ####
+### Random vs DQN ###
+Random Average Wins: 0.16
+DQN Average Wins: 0.44
+Win Rate Lift: 168.10%
+Z-Score: -13.36983
+p-value: 0.00000
+Null Hypothesis: DQN Agent win rate is similar to the Random Agent
+Alternate Hypothesis: DQN Agent win rate is different from the Random Agent
+0.00000 < 0.5, therefore reject the null hypothesis
+
+
+### Baseline vs DQN ###
+Baseline Average Wins: 0.04
+DQN Average Wins: 0.44
+Win Rate Lift: 893.18%
+Z-Score: -20.56156
+p-value: 0.00000
+Null Hypothesis: DQN Agent win rate is similar to the Baseline Agent
+Alternate Hypothesis: DQN Agent win rate is different from the Baseline Agent
+0.00000 < 0.5, therefore reject the null hypothesis
+
+
+#### AGENT REWARDS ####
+### Random vs DQN ###
+Random Average Reward: -912.62
+DQN Average Reward: -106.48
+Reward Lift: 88.33%
+Z-Score: 143.45043
+p-value: 0.00000
+Null Hypothesis: DQN Agent rewards are similar to the Random Agent
+Alternate Hypothesis: DQN Agent rewards are different from the Random Agent
+0.00000 < 0.5, therefore reject the null hypothesis
+
+
+### Baseline vs DQN ###
+Baseline Average Reward: -75.28
+DQN Average Reward: -106.48
+Reward Lift: -41.44%
+Z-Score: -27.91791
+p-value: 0.00000
+Null Hypothesis: DQN Agent rewards are similar to the Baseline Agent
+Alternate Hypothesis: DQN Agent rewards are different from the Baseline Agent
+0.00000 < 0.5, therefore reject the null hypothesis

@@ -333,27 +333,27 @@ def test_models(num_episodes: int = 10000,
     return np.mean(agent_episode_wins, axis=1)
 
 
-def run_statistical_tests(run_date_time, trained_policy_net='trained_agents/dqn_agent_final'):
-    _, random_wins = evaluate(agent_type='random',
-                              num_episodes=1000,
-                              logging_level='info',
-                              default_cost=DEFAULT_COST,
-                              trained_policy_net=trained_policy_net,
-                              run_date_time=run_date_time)
-    _, baseline_wins = evaluate(agent_type='baseline',
-                                num_episodes=1000,
-                                logging_level='info',
-                                default_cost=DEFAULT_COST,
-                                trained_policy_net=trained_policy_net,
-                                run_date_time=run_date_time)
-    _, dqn_wins = evaluate(agent_type='dqn',
-                           num_episodes=1000,
-                           logging_level='info',
-                           default_cost=DEFAULT_COST,
-                           trained_policy_net=trained_policy_net,
-                           run_date_time=run_date_time)
+def run_statistical_tests(num_episodes, run_date_time, trained_policy_net='trained_agents/dqn_agent_final'):
+    random_rewards, random_wins = evaluate(agent_type='random',
+                                           num_episodes=num_episodes,
+                                           logging_level='info',
+                                           default_cost=DEFAULT_COST,
+                                           trained_policy_net=trained_policy_net,
+                                           run_date_time=run_date_time)
+    baseline_rewards, baseline_wins = evaluate(agent_type='baseline',
+                                               num_episodes=num_episodes,
+                                               logging_level='info',
+                                               default_cost=DEFAULT_COST,
+                                               trained_policy_net=trained_policy_net,
+                                               run_date_time=run_date_time)
+    dqn_rewards, dqn_wins = evaluate(agent_type='dqn',
+                                     num_episodes=num_episodes,
+                                     logging_level='info',
+                                     default_cost=DEFAULT_COST,
+                                     trained_policy_net=trained_policy_net,
+                                     run_date_time=run_date_time)
 
-    run_analysis(random_wins, baseline_wins, dqn_wins, run_date_time)
+    run_analysis(random_wins, baseline_wins, dqn_wins, random_rewards, baseline_rewards, dqn_rewards, run_date_time)
 
 
 if __name__ == '__main__':
@@ -372,8 +372,17 @@ if __name__ == '__main__':
     # wr = test_models()
     # print(wr)
 
-    get_learning_curves(num_episodes=20000, default_cost=DEFAULT_COST, hidden_layer_sizes=[256],
-                        run_date_time=run_date_time)
+    # rewards, wins = evaluate(agent_type='dqn',
+    #                          num_episodes=1000,
+    #                          logging_level='info',
+    #                          default_cost=DEFAULT_COST,
+    #                          trained_policy_net='trained_agents/dqn_agent_final',
+    #                          run_date_time=run_date_time)
+    #
+    # plt.hist(rewards)
+    # plt.show()
 
-    # trained_policy_net = 'trained_agents/dqn_agent_2025_04_22_20_41'
-    # run_statistical_tests(run_date_time, trained_policy_net)
+    # get_learning_curves(num_episodes=20000, default_cost=DEFAULT_COST, hidden_layer_sizes=[256], run_date_time=run_date_time)
+
+    trained_policy_net = 'trained_agents/dqn_agent_final'
+    run_statistical_tests(1000, run_date_time, trained_policy_net)
