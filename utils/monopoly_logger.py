@@ -3,8 +3,8 @@ from datetime import datetime
 import os
 
 
-if not os.path.exists('log'):
-    os.makedirs('log')
+if not os.path.exists('../log'):
+    os.makedirs('../log')
 
 LOG_FILE = f'log/monopoly_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
 

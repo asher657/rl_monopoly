@@ -1,11 +1,11 @@
 import torch.optim.optimizer
 
-from agent import Agent
-from monopoly_logger import get_monopoly_logger
-from dqn import DQN, ReplayBuffer
+from agents.agent import Agent
+from utils.monopoly_logger import get_monopoly_logger
+from agents.dqn import DQN, ReplayBuffer
 import torch
 import numpy as np
-from constants import *
+from utils.constants import *
 from typing import Union, List
 
 
