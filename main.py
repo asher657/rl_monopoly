@@ -233,8 +233,7 @@ def parallel_agent_training(args):
                  run_date_time)
 
 
-def get_learning_curves(num_agents: int = 50,
-                        num_episodes: int = 30000,
+def get_learning_curves(num_episodes: int = 30000,
                         logging_level='info',
                         update_target_net_freq=50,
                         batch_size=512,
@@ -243,33 +242,18 @@ def get_learning_curves(num_agents: int = 50,
                         lr=0.001,
                         hidden_layer_sizes=[256],
                         run_date_time=None):
-    # mp.set_start_method('spawn', force=True)
-
-    # with mp.Pool(processes=min(num_agents, 12)) as pool:
-        # args_list = [('dqn',
-        #               num_episodes,
-        #               logging_level,
-        #               update_target_net_freq,
-        #               batch_size,
-        #               default_cost,
-        #               max_experience_len,
-        #               lr,
-        #               hidden_layer_sizes,
-        #               False,
-        #               False,
-        #               run_date_time) for _ in range(num_agents)]
-
-        # results = pool.map(parallel_agent_training, args_list)
     agent_episode_rewards, agent_episode_wins = train("dqn",
-                                                      num_episodes,
-                                                      "info",
-                                                      update_target_net_freq,
-                                                      default_cost= default_cost,
+                                                      num_episodes=num_episodes,
+                                                      logging_level=logging_level,
+                                                      update_target_net_freq=update_target_net_freq,
+                                                      batch_size=batch_size,
+                                                      default_cost=default_cost,
                                                       hidden_layer_sizes=hidden_layer_sizes,
+                                                      max_experience_len=max_experience_len,
+                                                      lr=lr,
                                                       save_model=False,
                                                       show_plots=False,
                                                       run_date_time=run_date_time)
-    # agent_episode_rewards, agent_episode_wins = zip(*results)
 
     agent_episode_rewards = np.array(list(agent_episode_rewards))
     agent_episode_wins = np.array(list(agent_episode_wins))
@@ -277,28 +261,27 @@ def get_learning_curves(num_agents: int = 50,
     right = 0
     sliding_sum_win = 0
     sliding_avg_win = []
-    sliding_sum_r = 0
-    sliding_avg_r = []
-    for left in range(len(agent_episode_wins)-199):
+    sliding_sum_reward = 0
+    sliding_avg_reward = []
+    for left in range(len(agent_episode_wins) - 199):
         while right < left + 200:
             sliding_sum_win += agent_episode_wins[right]
-            sliding_sum_r += agent_episode_rewards[right]
+            sliding_sum_reward += agent_episode_rewards[right]
             right += 1
-        sliding_avg_win.append(sliding_sum_win/200)
-        sliding_avg_r.append(sliding_sum_r/200)
+        sliding_avg_win.append(sliding_sum_win / 200)
+        sliding_avg_reward.append(sliding_sum_reward / 200)
         sliding_sum_win -= agent_episode_wins[left]
-        sliding_sum_r -= agent_episode_rewards[left]
-
+        sliding_sum_reward -= agent_episode_rewards[left]
 
     fig, ax1 = plt.subplots()
-    p1 = ax1.scatter(range(num_episodes), agent_episode_rewards, label = "Average Reward of Episode", color = "tab:blue")
+    p1 = ax1.scatter(range(num_episodes), agent_episode_rewards, label="Average Reward of Episode", color="tab:blue")
     plt.title('DQN Learning Curve')
     ax1.set_xlabel('Episodes')
     ax1.set_ylabel('Average Reward Per Episode')
-    p2 = ax1.plot(range(200,len(sliding_avg_r) +200), sliding_avg_r, label = "Sliding Reward", color = "m")
+    p2 = ax1.plot(range(200, len(sliding_avg_reward) + 200), sliding_avg_reward, label="Sliding Reward", color="m")
     ax2 = ax1.twinx()
     ax2.set_ylabel("Sliding Average Winrate")
-    p3 = ax2.plot(range(200,len(sliding_avg_win)+200), sliding_avg_win, label = "Sliding Winrate", color = "tab:red")
+    p3 = ax2.plot(range(200, len(sliding_avg_win) + 200), sliding_avg_win, label="Sliding Winrate", color="tab:red")
     plt.savefig(f'plots/dqn_learning_curve_{run_date_time}.png', dpi=300, bbox_inches='tight')
     fig.legend()
     plt.show()
@@ -389,7 +372,8 @@ if __name__ == '__main__':
     # wr = test_models()
     # print(wr)
 
-    get_learning_curves(1, num_episodes=20000, default_cost=2000, hidden_layer_sizes=[256], run_date_time=run_date_time)
+    get_learning_curves(num_episodes=20000, default_cost=DEFAULT_COST, hidden_layer_sizes=[256],
+                        run_date_time=run_date_time)
 
     # trained_policy_net = 'trained_agents/dqn_agent_2025_04_22_20_41'
     # run_statistical_tests(run_date_time, trained_policy_net)
